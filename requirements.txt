@@ -1,0 +1,6 @@
+PyQt5
+yt-dlp
+openai-whisper
+pytest
+python-docx
+moviepy
