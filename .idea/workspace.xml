@@ -7,30 +7,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e374a0d4-1f46-46c8-8fa0-ba1fef308aff" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/Archivism.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/downloader.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/control_buttons.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/input_section.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/main_window.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/output_section.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/settings_section.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/status_bar.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/threads.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gui/video_queue.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_app.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/transcriber.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+    <list default="true" id="e374a0d4-1f46-46c8-8fa0-ba1fef308aff" name="Changes" comment="works - no playlist">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/downloader.py" beforeDir="false" afterPath="$PROJECT_DIR$/downloader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/control_buttons.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/input_section.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/main_window.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/output_section.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/settings_section.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/status_bar.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/threads.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gui/video_queue.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_app.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/transcriber.py" beforeDir="false" afterPath="$PROJECT_DIR$/transcriber.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -97,7 +90,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
-      <option name="PARAMETERS" value="" />
+      <option name="PARAMETERS" value="https://www.youtube.com/watch?v=pcC4Dr6Wj2Q&amp;list=PLYw2h1eDgOzEP3HrzhceXPK1u-gR-wzGc&amp;index=3" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -129,14 +122,31 @@
       <workItem from="1728588519399" duration="13000" />
       <workItem from="1728588538248" duration="4781000" />
       <workItem from="1728634802765" duration="1515000" />
-      <workItem from="1728656873495" duration="2105000" />
+      <workItem from="1728656873495" duration="3386000" />
+      <workItem from="1728664690155" duration="7558000" />
+      <workItem from="1728753574319" duration="4752000" />
+      <workItem from="1728810886551" duration="115000" />
+      <workItem from="1728815125758" duration="1774000" />
     </task>
+    <task id="LOCAL-00001" summary="works - no playlist">
+      <option name="closed" value="true" />
+      <created>1728660283128</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1728660283128</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="works - no playlist" />
+    <option name="LAST_COMMIT_MESSAGE" value="works - no playlist" />
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Archivism$main.coverage" NAME="main Coverage Results" MODIFIED="1728658400846" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Archivism$main.coverage" NAME="main Coverage Results" MODIFIED="1728755637738" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
