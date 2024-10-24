@@ -1,5 +1,6 @@
 import sys
 import os
+import torch
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QListWidget, QFileDialog
@@ -7,6 +8,48 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QThread, pyqtSignal
 from downloader import download_media
 from transcriber import transcribe_audio
+from yt_dlp import YoutubeDL
+
+
+def get_device():
+    """Utility function to set the device to GPU if available, else CPU."""
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    return device
+
+
+def get_video_names(url: str):
+    """Returns a list of video names from the provided URL."""
+    ydl_opts = {'quiet': True}  # Suppress console output from yt-dlp
+    with YoutubeDL(ydl_opts) as ydl:
+        try:
+            info_dict = ydl.extract_info(url, download=False)
+            video_names = []
+
+            # If it's a playlist, get all video names
+            if 'entries' in info_dict:
+                video_names = [(entry['id'], entry['title']) for entry in info_dict['entries']]
+            else:
+                # Single video, add title to list
+                video_names.append((info_dict['id'], info_dict['title']))
+
+            return video_names
+
+        except Exception as e:
+            print(f"Error checking URL: {e}")
+            return [(None, f"Error: {e}")]  # Return a tuple with None for URL
+
+
+class NameCheckWorker(QThread):
+    video_names_ready = pyqtSignal(list)  # Signal to emit when names are ready
+
+    def __init__(self, url):
+        super().__init__()
+        self.url = url
+
+    def run(self):
+        """Run the get_video_names function in the background."""
+        video_names = get_video_names(self.url)
+        self.video_names_ready.emit(video_names)
 
 
 class Worker(QThread):
@@ -34,10 +77,16 @@ class DownloaderApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.device = get_device()  # Set the device
+        self.update_device_label()  # Update the label based on the device
 
     def initUI(self):
         # Main window layout
         layout = QVBoxLayout()
+
+        # Device info layout
+        self.device_label = QLabel("")
+        layout.addWidget(self.device_label)
 
         # URL input layout
         url_layout = QHBoxLayout()
@@ -46,7 +95,7 @@ class DownloaderApp(QWidget):
         url_layout.addWidget(QLabel("URL:"))
         url_layout.addWidget(self.url_input)
         self.add_url_button = QPushButton("Add URL", self)
-        self.add_url_button.clicked.connect(self.add_url)
+        self.add_url_button.clicked.connect(self.check_url)
         url_layout.addWidget(self.add_url_button)
 
         # Output folder layout
@@ -72,7 +121,7 @@ class DownloaderApp(QWidget):
         # Adding layouts to the main layout
         layout.addLayout(url_layout)
         layout.addLayout(output_layout)
-        layout.addWidget(QLabel("Queued URLs:"))
+        layout.addWidget(QLabel("Queued Videos:"))
         layout.addWidget(self.url_list)
         layout.addWidget(self.start_button)
         layout.addWidget(self.status_label)
@@ -83,16 +132,41 @@ class DownloaderApp(QWidget):
         self.setGeometry(300, 300, 600, 400)
 
         # URL queue
-        self.urls = []
+        self.urls = []  # Store URLs for downloading
+        self.titles = []  # Store titles for display
         self.worker = None
 
-    def add_url(self):
-        """Add URL to the queue."""
+    def update_device_label(self):
+        """Update the device label to inform the user about CPU/GPU usage."""
+        if self.device.type == 'cuda':
+            self.device_label.setText("Using GPU for processing.")
+        else:
+            self.device_label.setText("Using CPU for processing. This may take longer.")
+            self.status_label.setText("Warning: CUDA GPU is recommended for faster processing.")
+
+    def check_url(self):
+        """Check the URL to see if it's a playlist or video, and get names asynchronously."""
         url = self.url_input.text().strip()
         if url:
-            self.urls.append(url)
-            self.url_list.addItem(url)
-            self.url_input.clear()
+            self.status_label.setText("Checking URL...")
+            self.name_check_worker = NameCheckWorker(url)
+            self.name_check_worker.video_names_ready.connect(self.process_video_names)
+            self.name_check_worker.start()
+
+    def process_video_names(self, video_names):
+        """Process the video names when the worker is done."""
+        if len(video_names) > 1:
+            self.status_label.setText(f"Playlist detected: {len(video_names)} videos")
+        else:
+            self.status_label.setText("Single video detected")
+
+        # Add all video names and their corresponding URLs to the queue
+        for video_id, title in video_names:
+            self.url_list.addItem(title)
+            self.urls.append(video_id)  # Use video ID as URL for downloading
+
+        # Clear URL input
+        self.url_input.clear()
 
     def browse_output_folder(self):
         """Open a file dialog to select the output folder."""
@@ -126,6 +200,7 @@ class DownloaderApp(QWidget):
         """Re-enable the start button and clear the URL queue."""
         self.start_button.setEnabled(True)
         self.urls.clear()
+        self.titles.clear()
         self.url_list.clear()
         self.status_label.setText("Processing completed!")
 

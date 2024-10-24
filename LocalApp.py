@@ -1,25 +1,31 @@
 import sys
-import os
+import torch
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QListWidget, QFileDialog, QLineEdit
 )
 from PyQt5.QtCore import QThread, pyqtSignal
-from transcriber import transcribe_audio
+from transcriber import transcribe_audio  # Ensure this function supports CUDA
+
+
+def get_device():
+    """Utility function to set the device to GPU if available, else CPU."""
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    return device
 
 
 class Worker(QThread):
     progress = pyqtSignal(str)
 
-    def __init__(self, files, output_folder):
+    def __init__(self, files, output_folder, device):
         super().__init__()
         self.files = files
         self.output_folder = output_folder
+        self.device = device
 
     def run(self):
         """Perform the file processing in the background."""
         for file_path in self.files:
-            # Emit a signal to update the GUI (for example, to show which file is being processed)
             self.progress.emit(f"Processing: {os.path.basename(file_path)}")
             transcribe_audio(file_path, self.output_folder)
         self.progress.emit("Completed all files.")
@@ -29,10 +35,16 @@ class LocalFileApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.device = get_device()  # Set the device
+        self.update_device_label()  # Update the label based on the device
 
     def initUI(self):
         # Main window layout
         layout = QVBoxLayout()
+
+        # Device info layout
+        self.device_label = QLabel("")
+        layout.addWidget(self.device_label)
 
         # File selection layout
         file_layout = QHBoxLayout()
@@ -77,12 +89,24 @@ class LocalFileApp(QWidget):
         self.files = []
         self.worker = None
 
+    def update_device_label(self):
+        """Update the device label to inform the user about CPU/GPU usage."""
+        if self.device.type == 'cuda':
+            self.device_label.setText("Using GPU for processing.")
+        else:
+            self.device_label.setText("Using CPU for processing. This may take longer.")
+            self.status_label.setText("Warning: CUDA GPU is recommended for faster processing.")
+
     def add_files(self):
-        """Add local files to the queue."""
+        """Add local files to the queue and set output folder to the video file's directory."""
         file_paths, _ = QFileDialog.getOpenFileNames(self, "Select Files")
         if file_paths:
             self.files.extend(file_paths)
             self.file_list.addItems(file_paths)
+
+            # Set the output folder to the directory of the first selected file
+            first_file_directory = os.path.dirname(file_paths[0])
+            self.output_folder_input.setText(first_file_directory)
 
     def browse_output_folder(self):
         """Open a file dialog to select the output folder."""
@@ -103,7 +127,7 @@ class LocalFileApp(QWidget):
         self.status_label.setText("Processing files...")
 
         # Create a worker thread for file processing
-        self.worker = Worker(self.files, output_folder)
+        self.worker = Worker(self.files, output_folder, self.device)
         self.worker.progress.connect(self.update_status)
         self.worker.finished.connect(self.processing_finished)
         self.worker.start()

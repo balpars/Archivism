@@ -1,9 +1,4 @@
 PyQt5
 yt-dlp~=2024.10.7
 openai-whisper~=20240930
-pytest~=8.3.3
 python-docx
-moviepy
-
-PySide6~=6.8.0
-pathvalidate~=3.2.1
