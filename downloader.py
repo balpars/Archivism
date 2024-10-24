@@ -1,96 +1,109 @@
-import time
-from typing import Optional, List
-from pathlib import Path
-import yt_dlp
-import logging
+import os
+import sys
+import re
+from yt_dlp import YoutubeDL
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def get_video_info(video_url: str, retry_attempts: int = 5, sleep_duration: int = 2) -> Optional[List[dict]]:
+def sanitize_title(title):
     """
-    Retrieves the title and duration of the YouTube video or playlist without downloading.
-    If the URL is a playlist, returns a list of videos with their title and duration.
+    Sanitizes the title to create a filesystem-friendly folder name.
     """
-    for attempt in range(retry_attempts):
-        try:
-            ydl_opts = {'quiet': True, 'extract_flat': True}
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(video_url, download=False)
+    # Replace any character that is not alphanumeric, space, or hyphen with an underscore
+    sanitized = re.sub(r'[^\w\s-]', '', title)
+    # Replace spaces and consecutive underscores with a single underscore
+    sanitized = re.sub(r'\s+', '_', sanitized)
+    return sanitized.strip('_')
 
-                if 'entries' in info:  # Playlist detected
-                    videos = []
-                    for entry in info['entries']:
-                        title = entry.get('title', 'Unknown Title')
-                        duration = entry.get('duration', 0)  # Duration in seconds
-                        video_url = f"https://www.youtube.com/watch?v={entry.get('id')}"
-                        videos.append({'title': title, 'duration': duration, 'url': video_url})
-                    return videos
-                else:  # Single video
-                    title = info.get('title', 'Unknown Title')
-                    duration = info.get('duration', 0)  # Duration in seconds
-                    return [{'title': title, 'duration': duration, 'url': video_url}]
-        except yt_dlp.utils.DownloadError as e:
-            logging.error(f"Error fetching video info on attempt {attempt + 1}/{retry_attempts}: {e}")
-            if attempt < retry_attempts - 1:
-                time.sleep(sleep_duration)  # Wait for a bit before retrying
-            else:
-                logging.error(f"Failed to fetch video info after {retry_attempts} attempts.")
-                return None
-
-
-def download_video(video_url: str, output_folder: str = 'output', download_format: str = 'audio',
-                   progress_callback=None) -> str:
+def download_media(url, output_folder, download_format=None):
     """
-    Downloads the YouTube video in the specified format (audio or video).
-    Returns the actual path to the downloaded file.
-    """
-    # Ensure output directory exists
-    output_path = Path(output_folder)
-    output_path.mkdir(parents=True, exist_ok=True)
+    Downloads media from the given URL using yt-dlp with restricted filenames.
 
-    # Set up yt-dlp options
-    ydl_opts = {
-        'outtmpl': str(output_path / '%(title)s-%(id)s.%(ext)s'),  # Save directly to output folder
+    Args:
+        url (str): The URL of the media or playlist to download.
+        output_folder (str): The directory to save the downloaded files.
+        download_format (str, optional): Specify the format (e.g., 'best', 'bestaudio', 'bestvideo'). Defaults to 'best'.
+
+    Returns:
+        list: List of full paths to the downloaded files.
+    """
+    # Create the output folder if it doesn't exist
+    if not os.path.isdir(output_folder):
+        os.makedirs(output_folder, exist_ok=True)
+
+    # Temporary options to extract info without downloading
+    ydl_temp_opts = {
         'quiet': True,
         'no_warnings': True,
-        'restrictfilenames': True,  # Restrict filenames to safe ASCII characters
+        'skip_download': True,
     }
 
-    # Adding progress callback if available
-    if progress_callback:
-        def hook(d):
-            if d['status'] == 'downloading':
-                progress_callback(f"Progress: {d['_percent_str']} Speed: {d['_speed_str']} ETA: {d['eta']}s")
+    with YoutubeDL(ydl_temp_opts) as ydl:
+        try:
+            # Extract info to get playlist or video title
+            info_dict = ydl.extract_info(url, download=False)
+            if 'entries' in info_dict:
+                # It's a playlist
+                playlist_title = info_dict.get('title', 'playlist')
+                sanitized_playlist_title = sanitize_title(playlist_title)
+                # Create a folder with the sanitized playlist title
+                playlist_folder = os.path.join(output_folder, sanitized_playlist_title)
+                if not os.path.isdir(playlist_folder):
+                    os.makedirs(playlist_folder, exist_ok=True)
 
-        ydl_opts['progress_hooks'] = [hook]
+                # Process each video in the playlist
+                downloaded_files = []
+                for entry in info_dict['entries']:
+                    if entry is None:
+                        continue  # Skip if entry is None
+                    video_title = entry.get('title', 'video')
+                    sanitized_video_title = sanitize_title(video_title)
+                    video_folder = os.path.join(playlist_folder, sanitized_video_title)
+                    if not os.path.isdir(video_folder):
+                        os.makedirs(video_folder, exist_ok=True)
 
-    # Determine the desired format
-    if download_format == 'audio':
-        ydl_opts.update({
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        })
-    else:
-        ydl_opts.update({'format': 'bestvideo+bestaudio/best'})
+                    # Set download options for each video
+                    ydl_opts = {
+                        'restrict_filenames': True,
+                        'outtmpl': os.path.join(video_folder, '%(title)s.%(ext)s'),
+                        'format': download_format if download_format else 'best',
+                        'quiet': True,
+                        'no_warnings': True,
+                        'skip_download': False,
+                    }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        if progress_callback:
-            progress_callback("Starting download...")
+                    with YoutubeDL(ydl_opts) as ydl_video:
+                        # Download the video
+                        video_info = ydl_video.extract_info(entry['webpage_url'], download=True)
+                        filename = ydl_video.prepare_filename(video_info)
+                        full_path = os.path.abspath(filename)
+                        downloaded_files.append(full_path)
 
-        # Extract video information and download the video
-        info_dict = ydl.extract_info(video_url, download=True)
+                return downloaded_files
 
-        # Use the actual file path provided by yt-dlp after download
-        downloaded_file_path = ydl.prepare_filename(info_dict)
+            else:
+                # It's a single video
+                video_title = info_dict.get('title', 'video')
+                sanitized_video_title = sanitize_title(video_title)
+                video_folder = os.path.join(output_folder, sanitized_video_title)
+                if not os.path.isdir(video_folder):
+                    os.makedirs(video_folder, exist_ok=True)
 
-        logging.info(f"Downloaded file: {downloaded_file_path}")
-        if progress_callback:
-            progress_callback("Download completed.")
+                # Set download options
+                ydl_opts = {
+                    'restrict_filenames': True,
+                    'outtmpl': os.path.join(video_folder, '%(title)s.%(ext)s'),
+                    'format': download_format if download_format else 'best',
+                    'quiet': True,
+                    'no_warnings': True,
+                }
 
-        print(downloaded_file_path)
+                with YoutubeDL(ydl_opts) as ydl_video:
+                    # Download the video
+                    video_info = ydl_video.extract_info(url, download=True)
+                    filename = ydl_video.prepare_filename(video_info)
+                    full_path = os.path.abspath(filename)
 
-        return str(downloaded_file_path)
+                    return [full_path]
+
+        except Exception as e:
+            print(f"Error processing media: {e}", file=sys.stderr)
+            sys.exit(1)

@@ -5,6 +5,7 @@ import os
 import logging
 from time import time
 
+from word_stuff import save_transcription_as_word
 
 # Cache Whisper model to avoid loading multiple times
 model_cache = {}
@@ -40,7 +41,7 @@ def transcribe_audio(file_path: str, output_folder: str, language: str = None, m
                 start = format_timestamp(segment['start'])
                 end = format_timestamp(segment['end'])
                 f.write(f"{i + 1}\n{start} --> {end}\n{segment['text']}\n\n")
-
+        save_transcription_as_word(result, output_folder, "transcription")
         logging.info(f"Transcription saved in {output_folder}")
 
         end_time = time()
