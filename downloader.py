@@ -1,6 +1,8 @@
 import os
 import sys
 import re
+from pathlib import Path
+
 from yt_dlp import YoutubeDL
 
 def sanitize_title(title):
@@ -13,7 +15,7 @@ def sanitize_title(title):
     sanitized = re.sub(r'\s+', '_', sanitized)
     return sanitized.strip('_')
 
-def download_media(url, output_folder, download_format=None):
+def download_media(url, output_folder=Path("./output"), download_format=None):
     """
     Downloads media from the given URL using yt-dlp with restricted filenames.
 
@@ -25,6 +27,7 @@ def download_media(url, output_folder, download_format=None):
     Returns:
         list: List of full paths to the downloaded files.
     """
+    output_folder = Path(output_folder)
     # Create the output folder if it doesn't exist
     if not os.path.isdir(output_folder):
         os.makedirs(output_folder, exist_ok=True)
