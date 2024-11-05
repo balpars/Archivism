@@ -41,42 +41,52 @@ def sanitize_title(title):
     return sanitized.strip('_')
 
 
-def word_routine(video_title, duration, output_dir):
+def replace_newlines(text):
     """
-    Creates a Word document with the video title, transcription duration,
-    and appends the content of the transcription text file.
-
-    Args:
-        video_title (str): The title of the video (without extension).
-        duration (float): The duration of the transcription in seconds.
-        output_dir (str): The directory where the Word document will be saved.
+    # Replace newline characters not preceded by a period, question mark, or exclamation point with a space
     """
-    # Create a new Word document
-    doc = Document()
+    return re.sub(r'(?<![.!?])\n', ' ', text)
 
-    # Set the title of the document
-    doc.add_heading(video_title, level=1)
-
-    # Write the duration at the beginning of the document
-    doc.add_paragraph(f"Transcription Duration: {duration:.2f} seconds")
-
-    # Read the transcription text file (assuming there is only one)
-    txt_files = [f for f in os.listdir(output_dir) if f.endswith('.txt')]
-
-    if txt_files:  # Check if there is a .txt file
-        txt_file_path = os.path.join(output_dir, txt_files[0])  # Get the first txt file
-        with open(txt_file_path, 'r', encoding='utf-8') as txt_file:
-            transcription_content = txt_file.read()
-            # Append the transcription content to the Word document
-            doc.add_paragraph(transcription_content)
-
-    # Save the document with the video title as the filename
-    word_filename = os.path.join(output_dir, f"{video_title}.docx")
-    doc.save(word_filename)
 
 class WorkerThread(QThread):
     update_label = pyqtSignal(str)
     process_finished = pyqtSignal()
+
+    def word_routine(self, video_title, duration, output_dir):
+        """
+        Creates a Word document with the video title, transcription duration,
+        and appends the content of the transcription text file.
+
+        Args:
+            video_title (str): The title of the video (without extension).
+            duration (float): The duration of the transcription in seconds.
+            output_dir (str): The directory where the Word document will be saved.
+        """
+        # Create a new Word document
+        doc = Document()
+
+        # Set the title of the document
+        doc.add_heading(video_title, level=1)
+
+        # Write the duration at the beginning of the document
+        doc.add_paragraph(f"Transcription Duration: {duration:.2f} seconds")
+        doc.add_paragraph(f"Device used: {self.device}")
+        # Read the transcription text file (assuming there is only one)
+        txt_files = [f for f in os.listdir(output_dir) if f.endswith('.txt')]
+
+        if txt_files:  # Check if there is a .txt file
+            txt_file_path = os.path.join(output_dir, txt_files[0])  # Get the first txt file
+            with open(txt_file_path, 'r', encoding='utf-8') as txt_file:
+                transcription_content = txt_file.read()
+                # Append the transcription content to the Word document
+                
+                transcription_content = replace_newlines(transcription_content)
+                
+                doc.add_paragraph(transcription_content)
+
+        # Save the document with the video title as the filename
+        word_filename = os.path.join(output_dir, f"{video_title}.docx")
+        doc.save(word_filename)
 
     def download_routine(self):
         for url in self.url_list:
@@ -90,9 +100,9 @@ class WorkerThread(QThread):
     def transcribe_routine(self):
 
         if torch.cuda.is_available():
-            device = "cuda"
+            self.device = "cuda"
         else:
-            device = "cpu"
+            self.device = "cpu"
 
         merge_list = self.local_list + self.downloaded_list
         path_list = []
@@ -100,21 +110,19 @@ class WorkerThread(QThread):
             path_list.append(Path(f))
 
         for p in path_list:
-            # Get the video title (without extension)
+            # Get the video title
             video_title = os.path.splitext(os.path.basename(p))[0]
             output_dir = create_transcription_directory(p)
             self.update_label.emit(f"Transcribing {video_title}...")
             # Record the start time
             start_time = time.time()
-            subprocess.run(["whisper", p, "--model", "turbo", "--device", device,"--output_dir", output_dir])
+            subprocess.run(["whisper", p, "--model", "turbo", "--device", self.device,"--output_dir", output_dir])
             # Record the end time
             end_time = time.time()
             # Calculate the duration
             duration = end_time - start_time
             # Create a Word file using the word_routine function
-            word_routine(video_title, duration, output_dir)
-
-
+            self.word_routine(video_title, duration, output_dir)
 
     def __init__(self, url_list, local_list, output_folder, mode):
         """ Mode = 1 Sadece indir
@@ -126,14 +134,13 @@ class WorkerThread(QThread):
         self.downloaded_list= []
         self.output_folder = output_folder
         self.mode = mode
-
+        self.device = None
 
     def run(self):
         """Run the download and transcribe processes."""
         if len(self.url_list) == 0 and len(self.local_list) == 0:
             self.process_finished.emit()
             return
-
 
         if self.mode == 1:  # Download only
             if len(self.url_list) > 0:

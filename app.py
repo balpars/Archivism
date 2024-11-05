@@ -1,8 +1,5 @@
 import os
-import subprocess
 import sys
-from pathlib import Path
-
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QListWidget, QRadioButton,
                              QButtonGroup, QFileDialog, QMessageBox)
@@ -285,6 +282,8 @@ class VideoTranscriberGUI(QWidget):
 
 
 if __name__ == '__main__':
+
+    print("Running with Python version:", sys.version)
     app = QApplication(sys.argv)
     gui = VideoTranscriberGUI()
     gui.show()
