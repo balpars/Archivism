@@ -47,6 +47,8 @@ def replace_newlines(text):
     """
     return re.sub(r'(?<![.!?])\n', ' ', text)
 
+def remove_newlines(text):
+    return re.sub(r'[\r\n]+', ' ', text)
 
 class WorkerThread(QThread):
     update_label = pyqtSignal(str)
@@ -79,9 +81,12 @@ class WorkerThread(QThread):
             with open(txt_file_path, 'r', encoding='utf-8') as txt_file:
                 transcription_content = txt_file.read()
                 # Append the transcription content to the Word document
-                
-                transcription_content = replace_newlines(transcription_content)
-                
+
+                if self.noNewLine:
+                    transcription_content = remove_newlines(transcription_content)
+                else:
+                    transcription_content = replace_newlines(transcription_content)
+
                 doc.add_paragraph(transcription_content)
 
         # Save the document with the video title as the filename
@@ -124,9 +129,11 @@ class WorkerThread(QThread):
             # Create a Word file using the word_routine function
             self.word_routine(video_title, duration, output_dir)
 
-    def __init__(self, url_list, local_list, output_folder, mode):
+    def __init__(self, url_list, local_list, output_folder, mode, noNewLine):
         """ Mode = 1 Sadece indir
             Mode = 0 Transkript
+
+            noNewLine = True or False
         """
         super().__init__()
         self.url_list = url_list
@@ -134,6 +141,7 @@ class WorkerThread(QThread):
         self.downloaded_list= []
         self.output_folder = output_folder
         self.mode = mode
+        self.noNewLine = noNewLine
         self.device = None
 
     def run(self):

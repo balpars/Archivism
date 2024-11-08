@@ -3,9 +3,12 @@ import sys
 import re
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QFileDialog, QMessageBox
+    QLineEdit, QPushButton, QFileDialog, QMessageBox, QCheckBox
 )
+from PyQt5.QtCore import Qt
 from docx import Document
+
+from controller import remove_newlines
 
 
 class NewlineRemoverGUI(QWidget):
@@ -16,6 +19,9 @@ class NewlineRemoverGUI(QWidget):
     def initUI(self):
         self.setWindowTitle("Word Fixer")
         self.setGeometry(100, 100, 600, 100)
+
+        # Disable maximize and minimize buttons
+        self.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
 
         # Set macOS-like style
         self.setStyleSheet("""
@@ -49,6 +55,12 @@ class NewlineRemoverGUI(QWidget):
             QPushButton:hover {
                 background-color: #005BB5;
             }
+
+            QCheckBox {
+                font-size: 14px;
+                padding: 5px;
+            }
+
         """)
 
         # Main layout
@@ -64,6 +76,10 @@ class NewlineRemoverGUI(QWidget):
         file_layout.addWidget(self.file_path_input)
         file_layout.addWidget(self.browse_button)
         layout.addLayout(file_layout)
+
+        # Checkbox for "No Newline"
+        self.no_newline_checkbox = QCheckBox("No newline")
+        layout.addWidget(self.no_newline_checkbox)
 
         # Process file button
         self.process_button = QPushButton("Process and Save")
@@ -86,7 +102,7 @@ class NewlineRemoverGUI(QWidget):
         # Open file dialog to select .docx or .txt file
         options = QFileDialog.Options()
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select File", "", "Text Files (*.txt);;Word Documents (*.docx)", options=options
+            self, "Select File", "", "Documents (*.txt *.docx)", options=options
         )
 
         if file_path:
@@ -111,9 +127,16 @@ class NewlineRemoverGUI(QWidget):
             # Process text to remove newlines within sentences
             patched_text = self.replace_newlines_in_sentence(text)
 
+            if self.no_newline_checkbox.isChecked():
+                patched_text = remove_newlines(text)
+
+            # Prepare default save path with "_fix" appended
+            base_name = os.path.basename(self.file_path)
+            default_save_name = os.path.splitext(base_name)[0] + "_fix.txt"
+
             # Save the result to a new text file
             save_path, _ = QFileDialog.getSaveFileName(
-                self, "Save File", "", "Text Files (*.txt)", options=QFileDialog.Options()
+                self, "Save File", default_save_name, "Text Files (*.txt)", options=QFileDialog.Options()
             )
             if save_path:
                 with open(save_path, 'w', encoding='utf-8') as file:
@@ -129,6 +152,9 @@ class NewlineRemoverGUI(QWidget):
     def replace_newlines_in_sentence(self, text):
         # Replace newline characters not preceded by a period, question mark, or exclamation point with a space
         return re.sub(r'(?<![.!?])\n', ' ', text)
+
+    def remove_newlines(_text):
+        return re.sub(r'[\r\n]+', ' ', _text)
 
 
 if __name__ == '__main__':

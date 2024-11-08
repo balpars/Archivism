@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QListWidget, QRadioButton,
-                             QButtonGroup, QFileDialog, QMessageBox)
+                             QButtonGroup, QFileDialog, QMessageBox, QCheckBox)
 from controller import WorkerThread
 
 
@@ -66,6 +66,13 @@ class VideoTranscriberGUI(QWidget):
                 font-size: 14px;
                 padding: 5px;
             }
+            
+            QCheckBox {
+                font-size: 14px;
+                padding: 5px;
+            }
+            
+            
         """)
 
         # Main Layout
@@ -144,6 +151,10 @@ class VideoTranscriberGUI(QWidget):
         # Current action label
         self.current_action_label = QLabel("")
         layout.addWidget(self.current_action_label)
+
+        # Checkbox for "No Newline"
+        self.no_newline_checkbox = QCheckBox("No newline")
+        layout.addWidget(self.no_newline_checkbox)
 
         # Start Button
         self.start_button = QPushButton("Start Process")
@@ -266,7 +277,7 @@ class VideoTranscriberGUI(QWidget):
             self.update_action_label("Starting process...")
             self.start_button.setEnabled(False)
             self.worker = WorkerThread(self.video_list, self.local_file_list, self.output_path,
-                                       self.download_radio.isChecked())
+                                       self.download_radio.isChecked(), self.no_newline_checkbox.isChecked())
             self.worker.update_label.connect(self.update_action_label)
             self.worker.process_finished.connect(self.on_process_finished)
             self.worker.start()
